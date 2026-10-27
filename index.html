@@ -1,0 +1,1107 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>鲜知 · 智能冰箱食材管理</title>
+<link rel="stylesheet" href="https://miaoda.feishu.cn/fonts/css2?family=Noto+Sans+SC:wght@300;400;500;700&family=Noto+Serif+SC:wght@600;700&display=swap">
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.6.0/dist/echarts.min.js" integrity="sha384-pPi0zxBAoDu6+JXW/C68UZLvBUUtU+7zonhif43rqj7pxsGyqyqzcian2Rj37Rss" crossorigin="anonymous"></script>
+<style>
+  :root {
+    --primary: #2EC4A6;
+    --primary-light: #E8F8F4;
+    --primary-dark: #1FA388;
+    --accent: #FF8C42;
+    --accent-light: #FFF3E8;
+    --bg: #F5F8F8;
+    --surface: #FFFFFF;
+    --text: #1A2B2B;
+    --text-secondary: #6B7F7F;
+    --text-tertiary: #9FB0B0;
+    --border: #E5EDED;
+    --fresh: #2EC4A6;
+    --warning: #F5B841;
+    --expiring: #FF6B6B;
+    --radius: 16px;
+    --radius-sm: 10px;
+    --shadow: 0 2px 12px rgba(26, 43, 43, 0.06);
+    --shadow-lg: 0 8px 30px rgba(26, 43, 43, 0.1);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .app {
+    max-width: 430px;
+    margin: 0 auto;
+    min-height: 100vh;
+    background: var(--bg);
+    position: relative;
+    padding-bottom: 80px;
+  }
+
+  .status-bar {
+    padding: 16px 20px 8px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+
+  .view { display: none; animation: fadeIn 0.3s ease; }
+  .view.active { display: block; }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .bottom-nav {
+    position: fixed;
+    bottom: 0;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 100%;
+    max-width: 430px;
+    background: var(--surface);
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-around;
+    padding: 8px 0 calc(8px + env(safe-area-inset-bottom));
+    z-index: 100;
+  }
+
+  .nav-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 6px 12px;
+    cursor: pointer;
+    color: var(--text-tertiary);
+    transition: color 0.2s;
+    border: none;
+    background: none;
+    font-family: inherit;
+  }
+
+  .nav-item.active { color: var(--primary); }
+  .nav-item svg { width: 22px; height: 22px; }
+  .nav-item span { font-size: 11px; font-weight: 500; }
+
+  .hero {
+    padding: 12px 20px 20px;
+  }
+
+  .greeting {
+    font-size: 24px;
+    font-weight: 700;
+    margin-bottom: 4px;
+    letter-spacing: -0.5px;
+  }
+
+  .greeting-sub {
+    font-size: 14px;
+    color: var(--text-secondary);
+  }
+
+  .climate-card {
+    background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+    border-radius: var(--radius);
+    padding: 20px;
+    color: white;
+    margin: 16px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 8px 24px rgba(46, 196, 166, 0.3);
+  }
+
+  .climate-temp {
+    font-size: 42px;
+    font-weight: 700;
+    line-height: 1;
+    letter-spacing: -2px;
+  }
+
+  .climate-label {
+    font-size: 12px;
+    opacity: 0.9;
+    margin-top: 4px;
+  }
+
+  .climate-humidity {
+    text-align: right;
+  }
+
+  .climate-humidity-value {
+    font-size: 24px;
+    font-weight: 600;
+  }
+
+  /* 统计行 */
+  .stats-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    padding: 0 20px;
+    margin-bottom: 20px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    text-align: center;
+    box-shadow: var(--shadow);
+  }
+
+  .stat-num {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .stat-num.danger { color: var(--expiring); }
+  .stat-num.warning { color: var(--warning); }
+
+  .stat-label {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+  }
+
+  .section-title {
+    font-size: 16px;
+    font-weight: 600;
+    padding: 0 20px;
+    margin-bottom: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .section-title .more {
+    font-size: 12px;
+    color: var(--primary);
+    cursor: pointer;
+    font-weight: 400;
+  }
+
+  .expiring-list {
+    padding: 0 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 24px;
+  }
+
+  .expiring-item {
+    background: var(--surface);
+    border-radius: var(--radius-sm);
+    padding: 12px 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: var(--shadow);
+  }
+
+  .food-icon {
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  .food-icon.veg { background: #E8F8E8; color: #2E9E5B; }
+  .food-icon.meat { background: #FFE8E8; color: #D94452; }
+  .food-icon.fruit { background: #FFF3E0; color: #E8892A; }
+  .food-icon.dairy { background: #E8F4FF; color: #3B82C4; }
+  .food-icon.grain { background: #F5EDE0; color: #A67C3D; }
+
+  .expiring-info { flex: 1; min-width: 0; }
+  .expiring-name { font-size: 14px; font-weight: 600; }
+  .expiring-meta { font-size: 12px; color: var(--text-secondary); }
+
+  .expiring-badge {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 20px;
+    flex-shrink: 0;
+  }
+
+  .badge-danger { background: #FFE8E8; color: var(--expiring); }
+  .badge-warning { background: #FFF7E0; color: #D4941A; }
+
+  .fridge-visual {
+    margin: 16px 20px;
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 16px;
+    box-shadow: var(--shadow);
+  }
+
+  .fridge-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+  }
+
+  .fridge-title {
+    font-size: 14px;
+    font-weight: 600;
+  }
+
+  .fridge-layer {
+    border-bottom: 1px solid var(--border);
+    padding: 10px 0;
+  }
+
+  .fridge-layer:last-child { border-bottom: none; }
+
+  .layer-label {
+    font-size: 11px;
+    color: var(--text-tertiary);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+  }
+
+  .layer-items {
+    display: flex;
+    gap: 8px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+  }
+
+  .layer-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    min-width: 60px;
+    padding: 8px 4px;
+    border-radius: 8px;
+    transition: background 0.2s;
+    cursor: pointer;
+  }
+
+  .layer-item:hover { background: var(--bg); }
+
+  .layer-item .food-icon { width: 40px; height: 40px; font-size: 20px; }
+  .layer-item-name { font-size: 10px; color: var(--text-secondary); text-align: center; }
+
+  .category-tabs {
+    display: flex;
+    gap: 8px;
+    padding: 0 20px;
+    margin-bottom: 16px;
+    overflow-x: auto;
+  }
+
+  .cat-tab {
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 13px;
+    background: var(--surface);
+    color: var(--text-secondary);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all 0.2s;
+  }
+
+  .cat-tab.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+  }
+
+  .food-list {
+    padding: 0 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+  }
+
+  .food-card {
+    background: var(--surface);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: var(--shadow);
+  }
+
+  .food-info { flex: 1; }
+  .food-name { font-size: 14px; font-weight: 600; }
+  .food-detail { font-size: 12px; color: var(--text-secondary); margin-top: 2px; }
+
+  .freshness-bar {
+    width: 60px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    overflow: hidden;
+    margin-top: 6px;
+  }
+
+  .freshness-fill {
+    height: 100%;
+    border-radius: 2px;
+    transition: width 0.3s;
+  }
+
+  .freshness-fill.fresh { background: var(--fresh); }
+  .freshness-fill.warning { background: var(--warning); }
+  .freshness-fill.danger { background: var(--expiring); }
+
+  /* ===== 保质期曲线页 ===== */
+  .chart-container {
+    margin: 16px 20px;
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 16px;
+    box-shadow: var(--shadow);
+  }
+
+  .chart-title {
+    font-size: 15px;
+    font-weight: 600;
+    margin-bottom: 4px;
+  }
+
+  .chart-desc {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-bottom: 12px;
+  }
+
+  #expiryChart {
+    width: 100%;
+    height: 280px;
+  }
+
+  .data-note {
+    margin: 0 20px 20px;
+    padding: 12px 14px;
+    background: var(--primary-light);
+    border-radius: var(--radius-sm);
+    font-size: 12px;
+    color: var(--primary-dark);
+    line-height: 1.6;
+  }
+
+  /* 食材对比选择 */
+  .food-selector {
+    display: flex;
+    gap: 8px;
+    padding: 0 20px;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+  }
+
+  .food-chip {
+    padding: 6px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .food-chip.active {
+    background: var(--primary-light);
+    border-color: var(--primary);
+    color: var(--primary-dark);
+    font-weight: 500;
+  }
+
+  /* ===== 菜谱推荐页 ===== */
+  .recipe-card {
+    margin: 0 20px 14px;
+    background: var(--surface);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+  }
+
+  .recipe-img {
+    height: 140px;
+    background: linear-gradient(135deg, #FFE8D6 0%, #FFD4B8 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 48px;
+  }
+
+  .recipe-body { padding: 14px 16px; }
+  .recipe-name { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+  .recipe-meta { font-size: 12px; color: var(--text-secondary); margin-bottom: 10px; }
+
+  .recipe-tags {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+
+  .recipe-tag {
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 4px;
+    background: var(--bg);
+    color: var(--text-secondary);
+  }
+
+  .recipe-tag.match {
+    background: var(--primary-light);
+    color: var(--primary-dark);
+  }
+
+  .match-banner {
+    margin: 16px 20px;
+    padding: 12px 16px;
+    background: var(--accent-light);
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+    color: #C25E1A;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  /* ===== 硬件方案页 ===== */
+  .hardware-hero {
+    margin: 16px 20px;
+    background: var(--surface);
+    border-radius: var(--radius);
+    padding: 24px 20px;
+    text-align: center;
+    box-shadow: var(--shadow);
+  }
+
+  .hardware-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 16px;
+    background: var(--primary-light);
+    border-radius: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 40px;
+  }
+
+  .hardware-name {
+    font-size: 18px;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  .hardware-desc {
+    font-size: 13px;
+    color: var(--text-secondary);
+    line-height: 1.6;
+  }
+
+  .spec-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    padding: 0 20px;
+    margin-bottom: 20px;
+  }
+
+  .spec-item {
+    background: var(--surface);
+    border-radius: var(--radius-sm);
+    padding: 14px;
+    box-shadow: var(--shadow);
+  }
+
+  .spec-value {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--primary-dark);
+  }
+
+  .spec-label {
+    font-size: 11px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+  }
+
+  .flow-section {
+    padding: 0 20px;
+    margin-bottom: 24px;
+  }
+
+  .flow-step {
+    display: flex;
+    gap: 14px;
+    margin-bottom: 16px;
+    position: relative;
+  }
+
+  .flow-step:not(:last-child)::before {
+    content: '';
+    position: absolute;
+    left: 15px;
+    top: 32px;
+    bottom: -12px;
+    width: 2px;
+    background: var(--border);
+  }
+
+  .flow-dot {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--primary-light);
+    color: var(--primary-dark);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 14px;
+    font-weight: 600;
+    flex-shrink: 0;
+    z-index: 1;
+  }
+
+  .flow-content { flex: 1; padding-top: 4px; }
+  .flow-title { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
+  .flow-desc { font-size: 12px; color: var(--text-secondary); line-height: 1.5; }
+
+  /* ===== 页头通用 ===== */
+  .page-header {
+    padding: 20px 20px 0;
+  }
+
+  .page-title {
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+  }
+
+  .page-subtitle {
+    font-size: 13px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+  }
+</style>
+</head>
+<body>
+
+<div class="app">
+
+  <section class="view active" data-route="dashboard">
+    <div class="hero">
+      <div class="greeting">晚上好，用户01</div>
+      <div class="greeting-sub">你的冰箱运行状态良好</div>
+    </div>
+
+    <div class="climate-card">
+      <div>
+        <div class="climate-temp">4.2°C</div>
+        <div class="climate-label">冷藏层实时温度</div>
+      </div>
+      <div class="climate-humidity">
+        <div class="climate-humidity-value">68%</div>
+        <div class="climate-label">湿度</div>
+      </div>
+    </div>
+
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-num">12</div>
+        <div class="stat-label">食材总数</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num warning">2</div>
+        <div class="stat-label">临近过期</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-num danger">1</div>
+        <div class="stat-label">今日到期</div>
+      </div>
+    </div>
+
+    <div class="section-title">
+      临期提醒
+      <span class="more" onclick="go('foods')">查看全部</span>
+    </div>
+
+    <div class="expiring-list">
+      <div class="expiring-item">
+        <div class="food-icon dairy">奶</div>
+        <div class="expiring-info">
+          <div class="expiring-name">鲜牛奶</div>
+          <div class="expiring-meta">入库 3 天 · 剩余 1 天</div>
+        </div>
+        <span class="expiring-badge badge-danger">今日到期</span>
+      </div>
+      <div class="expiring-item">
+        <div class="food-icon veg">青</div>
+        <div class="expiring-info">
+          <div class="expiring-name">上海青</div>
+          <div class="expiring-meta">入库 4 天 · 剩余 2 天</div>
+        </div>
+        <span class="expiring-badge badge-warning">2天后</span>
+      </div>
+      <div class="expiring-item">
+        <div class="food-icon meat">肉</div>
+        <div class="expiring-info">
+          <div class="expiring-name">猪瘦肉</div>
+          <div class="expiring-meta">入库 2 天 · 剩余 3 天</div>
+        </div>
+        <span class="expiring-badge badge-warning">3天后</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" data-route="foods">
+    <div class="page-header">
+      <div class="page-title">食材清单</div>
+      <div class="page-subtitle">摄像头识别 · 本地 AI 处理</div>
+    </div>
+
+    <div class="fridge-visual">
+      <div class="fridge-header">
+        <div class="fridge-title">冷藏层内部视图</div>
+        <div style="font-size:11px;color:var(--text-tertiary);">镜头 45° 俯视</div>
+      </div>
+      <div class="fridge-layer">
+        <div class="layer-label">上层搁架</div>
+        <div class="layer-items">
+          <div class="layer-item"><div class="food-icon dairy">奶</div><div class="layer-item-name">牛奶</div></div>
+          <div class="layer-item"><div class="food-icon dairy">酪</div><div class="layer-item-name">奶酪</div></div>
+          <div class="layer-item"><div class="food-icon fruit">橙</div><div class="layer-item-name">橙子</div></div>
+        </div>
+      </div>
+      <div class="fridge-layer">
+        <div class="layer-label">中层搁架</div>
+        <div class="layer-items">
+          <div class="layer-item"><div class="food-icon veg">青</div><div class="layer-item-name">上海青</div></div>
+          <div class="layer-item"><div class="food-icon veg">茄</div><div class="layer-item-name">番茄</div></div>
+          <div class="layer-item"><div class="food-icon veg">萝</div><div class="layer-item-name">胡萝卜</div></div>
+          <div class="layer-item"><div class="food-icon fruit">苹</div><div class="layer-item-name">苹果</div></div>
+        </div>
+      </div>
+      <div class="fridge-layer">
+        <div class="layer-label">下层抽屉</div>
+        <div class="layer-items">
+          <div class="layer-item"><div class="food-icon meat">肉</div><div class="layer-item-name">猪瘦肉</div></div>
+          <div class="layer-item"><div class="food-icon meat">鱼</div><div class="layer-item-name">三文鱼</div></div>
+          <div class="layer-item"><div class="food-icon grain">蛋</div><div class="layer-item-name">鸡蛋</div></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="category-tabs">
+      <div class="cat-tab active">全部</div>
+      <div class="cat-tab">蔬菜</div>
+      <div class="cat-tab">水果</div>
+      <div class="cat-tab">肉类</div>
+      <div class="cat-tab">乳品</div>
+    </div>
+
+    <div class="food-list">
+      <div class="food-card">
+        <div class="food-icon dairy">奶</div>
+        <div class="food-info">
+          <div class="food-name">鲜牛奶 1L</div>
+          <div class="food-detail">入库 3 天 · 4.2°C 环境</div>
+          <div class="freshness-bar"><div class="freshness-fill danger" style="width:25%"></div></div>
+        </div>
+        <span class="expiring-badge badge-danger">剩 1 天</span>
+      </div>
+      <div class="food-card">
+        <div class="food-icon veg">青</div>
+        <div class="food-info">
+          <div class="food-name">上海青 300g</div>
+          <div class="food-detail">入库 4 天 · 4.2°C 环境</div>
+          <div class="freshness-bar"><div class="freshness-fill warning" style="width:40%"></div></div>
+        </div>
+        <span class="expiring-badge badge-warning">剩 2 天</span>
+      </div>
+      <div class="food-card">
+        <div class="food-icon meat">肉</div>
+        <div class="food-info">
+          <div class="food-name">猪瘦肉 500g</div>
+          <div class="food-detail">入库 2 天 · 3.8°C 环境</div>
+          <div class="freshness-bar"><div class="freshness-fill warning" style="width:60%"></div></div>
+        </div>
+        <span class="expiring-badge badge-warning">剩 3 天</span>
+      </div>
+      <div class="food-card">
+        <div class="food-icon veg">茄</div>
+        <div class="food-info">
+          <div class="food-name">番茄 4 个</div>
+          <div class="food-detail">入库 5 天 · 4.2°C 环境</div>
+          <div class="freshness-bar"><div class="freshness-fill fresh" style="width:75%"></div></div>
+        </div>
+        <span class="expiring-badge" style="background:var(--primary-light);color:var(--primary-dark);">剩 5 天</span>
+      </div>
+      <div class="food-card">
+        <div class="food-icon fruit">苹</div>
+        <div class="food-info">
+          <div class="food-name">红富士苹果 6 个</div>
+          <div class="food-detail">入库 7 天 · 4.2°C 环境</div>
+          <div class="freshness-bar"><div class="freshness-fill fresh" style="width:85%"></div></div>
+        </div>
+        <span class="expiring-badge" style="background:var(--primary-light);color:var(--primary-dark);">剩 12 天</span>
+      </div>
+      <div class="food-card">
+        <div class="food-icon grain">蛋</div>
+        <div class="food-info">
+          <div class="food-name">鸡蛋 12 枚</div>
+          <div class="food-detail">入库 10 天 · 4.2°C 环境</div>
+          <div class="freshness-bar"><div class="freshness-fill fresh" style="width:70%"></div></div>
+        </div>
+        <span class="expiring-badge" style="background:var(--primary-light);color:var(--primary-dark);">剩 18 天</span>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" data-route="expiry">
+    <div class="page-header">
+      <div class="page-title">动态保质期</div>
+      <div class="page-subtitle">基于实测数据 + 实时温湿度推算</div>
+    </div>
+
+    <div class="food-selector">
+      <div class="food-chip active">青菜</div>
+      <div class="food-chip">番茄</div>
+      <div class="food-chip">肉类</div>
+    </div>
+
+    <div class="chart-container">
+      <div class="chart-title">新鲜度衰减曲线</div>
+      <div class="chart-desc">不同恒温环境下的青菜新鲜度变化（实测数据）</div>
+      <div id="expiryChart"></div>
+    </div>
+
+    <div class="data-note">
+      <strong>数据说明：</strong>曲线来自本地小实验实测记录，已替换通用保质期数值。系统结合冰箱内实时 4.2°C / 68%RH 动态推算当前食材剩余可食用时间。
+    </div>
+  </section>
+
+  <section class="view" data-route="recipes">
+    <div class="page-header">
+      <div class="page-title">智能菜谱推荐</div>
+      <div class="page-subtitle">基于冰箱现有食材匹配</div>
+    </div>
+
+    <div class="match-banner">
+      <span><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2v20M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg></span>
+      <span>检测到 3 样临期食材，优先推荐消耗方案</span>
+    </div>
+
+    <div class="recipe-card">
+      <div class="recipe-img">
+        <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#2E9E5B" stroke-width="1.5"><path d="M12 2C8 6 6 10 6 14a6 6 0 0012 0c0-4-2-8-6-12z"/><path d="M12 14v8"/></svg>
+      </div>
+      <div class="recipe-body">
+        <div class="recipe-name">青菜番茄炒蛋</div>
+        <div class="recipe-meta">快手 15 分钟 · 消耗临期食材 2 样</div>
+        <div class="recipe-tags">
+          <span class="recipe-tag match">上海青 ✓</span>
+          <span class="recipe-tag match">番茄 ✓</span>
+          <span class="recipe-tag match">鸡蛋 ✓</span>
+          <span class="recipe-tag">米饭</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="recipe-card">
+      <div class="recipe-img">
+        <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#D94452" stroke-width="1.5"><path d="M15 11h.01M11 15h.01M16 16h.01M2 16l20-6-6 12-4-6-10-0z"/></svg>
+      </div>
+      <div class="recipe-body">
+        <div class="recipe-name">胡萝卜瘦肉粥</div>
+        <div class="recipe-meta">暖胃 25 分钟 · 消耗临期食材 1 样</div>
+        <div class="recipe-tags">
+          <span class="recipe-tag match">猪瘦肉 ✓</span>
+          <span class="recipe-tag match">胡萝卜 ✓</span>
+          <span class="recipe-tag">大米</span>
+          <span class="recipe-tag">姜</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="recipe-card">
+      <div class="recipe-img">
+        <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#3B82C4" stroke-width="1.5"><path d="M8 2h8v4H8zM6 6h12v14a2 2 0 01-2 2H8a2 2 0 01-2-2V6z"/></svg>
+      </div>
+      <div class="recipe-body">
+        <div class="recipe-name">牛奶橙香吐司</div>
+        <div class="recipe-meta">早餐 10 分钟 · 消耗临期食材 1 样</div>
+        <div class="recipe-tags">
+          <span class="recipe-tag match">鲜牛奶 ✓</span>
+          <span class="recipe-tag match">橙子 ✓</span>
+          <span class="recipe-tag">吐司</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="view" data-route="hardware">
+    <div class="page-header">
+      <div class="page-title">硬件方案</div>
+      <div class="page-subtitle">低功耗 · 免安装 · 本地识别</div>
+    </div>
+
+    <div class="hardware-hero">
+      <div class="hardware-icon">
+        <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#1FA388" stroke-width="1.5"><path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/><circle cx="12" cy="13" r="4"/></svg>
+      </div>
+      <div class="hardware-name">迷你蓝牙摄像头</div>
+      <div class="hardware-desc">
+        仅 28g 重，白色圆角挂钩外壳，与冰箱内壁风格统一。<br>
+        免粘免打孔，挂在搁架边缘即可使用。
+      </div>
+    </div>
+
+    <div class="spec-grid">
+      <div class="spec-item">
+        <div class="spec-value">28g</div>
+        <div class="spec-label">整机重量</div>
+      </div>
+      <div class="spec-item">
+        <div class="spec-value">-5~15°C</div>
+        <div class="spec-label">工作温度</div>
+      </div>
+      <div class="spec-item">
+        <div class="spec-value">3个月+</div>
+        <div class="spec-label">单次充电续航</div>
+      </div>
+      <div class="spec-item">
+        <div class="spec-value">90%+</div>
+        <div class="spec-label">视野覆盖率</div>
+      </div>
+    </div>
+
+    <div class="section-title">数据链路</div>
+
+    <div class="flow-section">
+      <div class="flow-step">
+        <div class="flow-dot">1</div>
+        <div class="flow-content">
+          <div class="flow-title">门磁唤醒拍摄</div>
+          <div class="flow-desc">冰箱门开合时门磁传感器触发，唤醒摄像头拍摄一张画面，其余 95% 时间深度休眠</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-dot">2</div>
+        <div class="flow-content">
+          <div class="flow-title">蓝牙直传旧手机</div>
+          <div class="flow-desc">画面通过低功耗蓝牙传输到冰箱外侧的闲置手机，不穿墙、不占家庭网络带宽</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-dot">3</div>
+        <div class="flow-content">
+          <div class="flow-title">本地 AI 食材识别</div>
+          <div class="flow-desc">轻量化离线 AI 程序在本地完成食材分类与新鲜度判断，数据不上传云端，保护隐私</div>
+        </div>
+      </div>
+      <div class="flow-step">
+        <div class="flow-dot">4</div>
+        <div class="flow-content">
+          <div class="flow-title">同步小程序云端</div>
+          <div class="flow-desc">识别结果与温湿度数据同步到免费云开发小程序，免自建服务器，零运维成本</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <nav class="bottom-nav">
+    <button class="nav-item active" data-nav="dashboard">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
+      <span>首页</span>
+    </button>
+    <button class="nav-item" data-nav="foods">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+      <span>食材</span>
+    </button>
+    <button class="nav-item" data-nav="expiry">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+      <span>保质期</span>
+    </button>
+    <button class="nav-item" data-nav="recipes">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.247 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"/></svg>
+      <span>菜谱</span>
+    </button>
+    <button class="nav-item" data-nav="hardware">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2"/></svg>
+      <span>硬件</span>
+    </button>
+  </nav>
+
+</div>
+
+<script>
+const views = document.querySelectorAll('.view');
+const navItems = document.querySelectorAll('.nav-item');
+
+function go(route) {
+  location.hash = route;
+}
+
+function handleRoute() {
+  const route = location.hash.slice(1) || 'dashboard';
+  views.forEach(v => v.classList.toggle('active', v.dataset.route === route));
+  navItems.forEach(n => n.classList.toggle('active', n.dataset.nav === route));
+  window.scrollTo(0, 0);
+
+  if (route === 'expiry' && !window._chartInited) {
+    initChart();
+  }
+}
+
+navItems.forEach(item => {
+  item.addEventListener('click', () => go(item.dataset.nav));
+});
+
+window.addEventListener('hashchange', handleRoute);
+
+let chart;
+function initChart() {
+  window._chartInited = true;
+  const el = document.getElementById('expiryChart');
+  chart = echarts.init(el);
+
+  const days = ['第0天', '第1天', '第2天', '第3天', '第4天', '第5天', '第6天', '第7天'];
+
+  const option = {
+    grid: { top: 30, right: 20, bottom: 30, left: 40 },
+    tooltip: { trigger: 'axis' },
+    legend: {
+      data: ['2°C', '4°C', '6°C'],
+      bottom: 0,
+      icon: 'roundRect',
+      itemWidth: 12,
+      itemHeight: 4,
+      textStyle: { fontSize: 11, color: '#6B7F7F' }
+    },
+    xAxis: {
+      type: 'category',
+      data: days,
+      axisLine: { lineStyle: { color: '#E5EDED' } },
+      axisLabel: { fontSize: 11, color: '#9FB0B0' },
+      axisTick: { show: false }
+    },
+    yAxis: {
+      type: 'value',
+      min: 0,
+      max: 100,
+      name: '新鲜度 %',
+      nameTextStyle: { fontSize: 10, color: '#9FB0B0' },
+      axisLine: { show: false },
+      axisTick: { show: false },
+      splitLine: { lineStyle: { color: '#F0F5F5' } },
+      axisLabel: { fontSize: 11, color: '#9FB0B0' }
+    },
+    series: [
+      {
+        name: '2°C',
+        type: 'line',
+        smooth: true,
+        data: [100, 98, 95, 90, 84, 76, 65, 52],
+        lineStyle: { width: 2.5, color: '#2EC4A6' },
+        itemStyle: { color: '#2EC4A6' },
+        symbolSize: 6
+      },
+      {
+        name: '4°C',
+        type: 'line',
+        smooth: true,
+        data: [100, 95, 88, 78, 65, 50, 35, 20],
+        lineStyle: { width: 2.5, color: '#FF8C42' },
+        itemStyle: { color: '#FF8C42' },
+        symbolSize: 6
+      },
+      {
+        name: '6°C',
+        type: 'line',
+        smooth: true,
+        data: [100, 90, 78, 62, 45, 28, 15, 5],
+        lineStyle: { width: 2.5, color: '#FF6B6B' },
+        itemStyle: { color: '#FF6B6B' },
+        symbolSize: 6
+      }
+    ]
+  };
+
+  chart.setOption(option);
+  window.addEventListener('resize', () => chart.resize());
+}
+
+// 食材切换
+document.querySelectorAll('.food-chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('.food-chip').forEach(c => c.classList.remove('active'));
+    chip.classList.add('active');
+    // 模拟切换数据
+    const food = chip.textContent.trim();
+    const el = document.querySelector('.chart-desc');
+    if (food === '青菜') {
+      el.textContent = '不同恒温环境下的青菜新鲜度变化（实测数据）';
+      chart.setOption({
+        series: [
+          { data: [100, 98, 95, 90, 84, 76, 65, 52] },
+          { data: [100, 95, 88, 78, 65, 50, 35, 20] },
+          { data: [100, 90, 78, 62, 45, 28, 15, 5] }
+        ]
+      });
+    } else if (food === '番茄') {
+      el.textContent = '不同恒温环境下的番茄新鲜度变化（实测数据）';
+      chart.setOption({
+        series: [
+          { data: [100, 99, 98, 96, 93, 89, 84, 78] },
+          { data: [100, 98, 95, 90, 83, 75, 65, 54] },
+          { data: [100, 96, 90, 82, 72, 60, 47, 34] }
+        ]
+      });
+    } else {
+      el.textContent = '不同恒温环境下的猪瘦肉新鲜度变化（实测数据）';
+      chart.setOption({
+        series: [
+          { data: [100, 95, 88, 78, 65, 50, 35, 20] },
+          { data: [100, 90, 78, 62, 45, 28, 15, 5] },
+          { data: [100, 82, 65, 45, 25, 12, 4, 0] }
+        ]
+      });
+    }
+  });
+});
+
+document.querySelectorAll('.cat-tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+  });
+});
+
+handleRoute();
+</script>
+
+</body>
+</html>
