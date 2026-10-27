@@ -47,6 +47,7 @@
     padding-bottom: 80px;
   }
 
+  /* ===== 顶部状态栏 ===== */
   .status-bar {
     padding: 16px 20px 8px;
     display: flex;
@@ -56,6 +57,7 @@
     color: var(--text-secondary);
   }
 
+  /* ===== 视图切换 ===== */
   .view { display: none; animation: fadeIn 0.3s ease; }
   .view.active { display: block; }
 
@@ -64,6 +66,7 @@
     to { opacity: 1; transform: translateY(0); }
   }
 
+  /* ===== 底部导航 ===== */
   .bottom-nav {
     position: fixed;
     bottom: 0;
@@ -97,6 +100,7 @@
   .nav-item svg { width: 22px; height: 22px; }
   .nav-item span { font-size: 11px; font-weight: 500; }
 
+  /* ===== Dashboard ===== */
   .hero {
     padding: 12px 20px 20px;
   }
@@ -113,6 +117,7 @@
     color: var(--text-secondary);
   }
 
+  /* 温湿度卡片 */
   .climate-card {
     background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
     border-radius: var(--radius);
@@ -179,6 +184,7 @@
     margin-top: 2px;
   }
 
+  /* 区块标题 */
   .section-title {
     font-size: 16px;
     font-weight: 600;
@@ -196,6 +202,7 @@
     font-weight: 400;
   }
 
+  /* 临期提醒列表 */
   .expiring-list {
     padding: 0 20px;
     display: flex;
@@ -247,6 +254,7 @@
   .badge-danger { background: #FFE8E8; color: var(--expiring); }
   .badge-warning { background: #FFF7E0; color: #D4941A; }
 
+  /* ===== 食材清单页 ===== */
   .fridge-visual {
     margin: 16px 20px;
     background: var(--surface);
@@ -306,6 +314,7 @@
   .layer-item .food-icon { width: 40px; height: 40px; font-size: 20px; }
   .layer-item-name { font-size: 10px; color: var(--text-secondary); text-align: center; }
 
+  /* 食材分类标签 */
   .category-tabs {
     display: flex;
     gap: 8px;
@@ -332,6 +341,7 @@
     border-color: var(--primary);
   }
 
+  /* 食材卡片列表 */
   .food-list {
     padding: 0 20px;
     display: flex;
@@ -605,15 +615,120 @@
     color: var(--text-secondary);
     margin-top: 2px;
   }
+
+  /* ===== 桌面端适配（宽度 ≥ 900px） ===== */
+  @media (min-width: 900px) {
+    body {
+      background:
+        radial-gradient(1200px 600px at 15% -10%, rgba(46, 196, 166, 0.08), transparent 60%),
+        radial-gradient(1000px 500px at 90% 0%, rgba(255, 140, 66, 0.06), transparent 55%),
+        var(--bg);
+    }
+
+    .app {
+      max-width: 1100px;
+      padding: 24px 32px 60px;
+      background: transparent;
+      min-height: 100vh;
+    }
+
+    /* 顶部状态栏 */
+    .status-bar { padding: 0 0 16px; font-size: 13px; }
+
+    /* 底部导航改为桌面侧栏 */
+    .bottom-nav {
+      position: fixed;
+      top: 0;
+      bottom: 0;
+      left: 0;
+      transform: none;
+      width: 240px;
+      max-width: none;
+      border-top: none;
+      border-right: 1px solid var(--border);
+      background: var(--surface);
+      flex-direction: column;
+      justify-content: flex-start;
+      padding: 28px 16px;
+      gap: 4px;
+      box-shadow: 1px 0 12px rgba(26,43,43,0.04);
+    }
+
+    .bottom-nav::before {
+      content: '鲜知';
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--primary);
+      letter-spacing: 1px;
+      padding: 0 10px 20px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 16px;
+      width: 100%;
+    }
+
+    .nav-item {
+      flex-direction: row;
+      justify-content: flex-start;
+      gap: 12px;
+      padding: 12px 14px;
+      border-radius: 10px;
+      font-size: 14px;
+      width: 100%;
+    }
+
+    .nav-item span { font-size: 14px; font-weight: 500; }
+    .nav-item.active { background: var(--primary-light); }
+
+    .app { margin-left: 240px; width: calc(100% - 240px); }
+
+    /* 视图内容最大宽度，居中 */
+    .view.active { max-width: 900px; margin: 0 auto; }
+
+    /* 首页：临期列表多列 */
+    .expiring-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    }
+
+    /* 食材清单：冰箱视图 + 列表双栏 */
+    .fridge-visual { max-width: 460px; }
+    .food-list {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    }
+
+    /* 菜谱：多列卡片 */
+    .recipe-card { margin-left: 0; margin-right: 0; }
+    .recipes-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 16px; }
+
+    /* 硬件：规格与流程并排 */
+    .hardware-hero { max-width: 520px; margin-left: auto; margin-right: auto; }
+    .spec-grid {
+      grid-template-columns: repeat(4, 1fr);
+      max-width: 520px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .flow-section { max-width: 720px; margin-left: auto; margin-right: auto; }
+
+    /* 图表容器更宽 */
+    .chart-container { max-width: 720px; }
+    .food-selector { max-width: 720px; }
+    .data-note { max-width: 720px; }
+  }
+
+  /* 菜谱卡片在外层做网格包裹（桌面用） */
+  .recipes-grid { display: block; }
 </style>
 </head>
 <body>
 
 <div class="app">
 
+  <!-- ===== Dashboard 视图 ===== -->
   <section class="view active" data-route="dashboard">
     <div class="hero">
-      <div class="greeting">晚上好，用户01</div>
+      <div class="greeting">晚上好，小明</div>
       <div class="greeting-sub">你的冰箱运行状态良好</div>
     </div>
 
@@ -676,6 +791,7 @@
     </div>
   </section>
 
+  <!-- ===== 食材清单视图 ===== -->
   <section class="view" data-route="foods">
     <div class="page-header">
       <div class="page-title">食材清单</div>
@@ -780,6 +896,7 @@
     </div>
   </section>
 
+  <!-- ===== 保质期曲线视图 ===== -->
   <section class="view" data-route="expiry">
     <div class="page-header">
       <div class="page-title">动态保质期</div>
@@ -803,6 +920,7 @@
     </div>
   </section>
 
+  <!-- ===== 菜谱推荐视图 ===== -->
   <section class="view" data-route="recipes">
     <div class="page-header">
       <div class="page-title">智能菜谱推荐</div>
@@ -814,54 +932,57 @@
       <span>检测到 3 样临期食材，优先推荐消耗方案</span>
     </div>
 
-    <div class="recipe-card">
-      <div class="recipe-img">
-        <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#2E9E5B" stroke-width="1.5"><path d="M12 2C8 6 6 10 6 14a6 6 0 0012 0c0-4-2-8-6-12z"/><path d="M12 14v8"/></svg>
-      </div>
-      <div class="recipe-body">
-        <div class="recipe-name">青菜番茄炒蛋</div>
-        <div class="recipe-meta">快手 15 分钟 · 消耗临期食材 2 样</div>
-        <div class="recipe-tags">
-          <span class="recipe-tag match">上海青 ✓</span>
-          <span class="recipe-tag match">番茄 ✓</span>
-          <span class="recipe-tag match">鸡蛋 ✓</span>
-          <span class="recipe-tag">米饭</span>
+    <div class="recipes-grid">
+      <div class="recipe-card">
+        <div class="recipe-img">
+          <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#2E9E5B" stroke-width="1.5"><path d="M12 2C8 6 6 10 6 14a6 6 0 0012 0c0-4-2-8-6-12z"/><path d="M12 14v8"/></svg>
+        </div>
+        <div class="recipe-body">
+          <div class="recipe-name">青菜番茄炒蛋</div>
+          <div class="recipe-meta">快手 15 分钟 · 消耗临期食材 2 样</div>
+          <div class="recipe-tags">
+            <span class="recipe-tag match">上海青 ✓</span>
+            <span class="recipe-tag match">番茄 ✓</span>
+            <span class="recipe-tag match">鸡蛋 ✓</span>
+            <span class="recipe-tag">米饭</span>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="recipe-card">
-      <div class="recipe-img">
-        <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#D94452" stroke-width="1.5"><path d="M15 11h.01M11 15h.01M16 16h.01M2 16l20-6-6 12-4-6-10-0z"/></svg>
-      </div>
-      <div class="recipe-body">
-        <div class="recipe-name">胡萝卜瘦肉粥</div>
-        <div class="recipe-meta">暖胃 25 分钟 · 消耗临期食材 1 样</div>
-        <div class="recipe-tags">
-          <span class="recipe-tag match">猪瘦肉 ✓</span>
-          <span class="recipe-tag match">胡萝卜 ✓</span>
-          <span class="recipe-tag">大米</span>
-          <span class="recipe-tag">姜</span>
+      <div class="recipe-card">
+        <div class="recipe-img">
+          <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#D94452" stroke-width="1.5"><path d="M15 11h.01M11 15h.01M16 16h.01M2 16l20-6-6 12-4-6-10-0z"/></svg>
+        </div>
+        <div class="recipe-body">
+          <div class="recipe-name">胡萝卜瘦肉粥</div>
+          <div class="recipe-meta">暖胃 25 分钟 · 消耗临期食材 1 样</div>
+          <div class="recipe-tags">
+            <span class="recipe-tag match">猪瘦肉 ✓</span>
+            <span class="recipe-tag match">胡萝卜 ✓</span>
+            <span class="recipe-tag">大米</span>
+            <span class="recipe-tag">姜</span>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="recipe-card">
-      <div class="recipe-img">
-        <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#3B82C4" stroke-width="1.5"><path d="M8 2h8v4H8zM6 6h12v14a2 2 0 01-2 2H8a2 2 0 01-2-2V6z"/></svg>
-      </div>
-      <div class="recipe-body">
-        <div class="recipe-name">牛奶橙香吐司</div>
-        <div class="recipe-meta">早餐 10 分钟 · 消耗临期食材 1 样</div>
-        <div class="recipe-tags">
-          <span class="recipe-tag match">鲜牛奶 ✓</span>
-          <span class="recipe-tag match">橙子 ✓</span>
-          <span class="recipe-tag">吐司</span>
+      <div class="recipe-card">
+        <div class="recipe-img">
+          <svg width="56" height="56" viewBox="0 0 24 24" fill="none" stroke="#3B82C4" stroke-width="1.5"><path d="M8 2h8v4H8zM6 6h12v14a2 2 0 01-2 2H8a2 2 0 01-2-2V6z"/></svg>
+        </div>
+        <div class="recipe-body">
+          <div class="recipe-name">牛奶橙香吐司</div>
+          <div class="recipe-meta">早餐 10 分钟 · 消耗临期食材 1 样</div>
+          <div class="recipe-tags">
+            <span class="recipe-tag match">鲜牛奶 ✓</span>
+            <span class="recipe-tag match">橙子 ✓</span>
+            <span class="recipe-tag">吐司</span>
+          </div>
         </div>
       </div>
     </div>
   </section>
 
+  <!-- ===== 硬件方案视图 ===== -->
   <section class="view" data-route="hardware">
     <div class="page-header">
       <div class="page-title">硬件方案</div>
@@ -932,6 +1053,7 @@
     </div>
   </section>
 
+  <!-- ===== 底部导航 ===== -->
   <nav class="bottom-nav">
     <button class="nav-item active" data-nav="dashboard">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/></svg>
@@ -958,6 +1080,7 @@
 </div>
 
 <script>
+// ===== 路由 =====
 const views = document.querySelectorAll('.view');
 const navItems = document.querySelectorAll('.nav-item');
 
@@ -982,6 +1105,7 @@ navItems.forEach(item => {
 
 window.addEventListener('hashchange', handleRoute);
 
+// ===== 保质期曲线图表 =====
 let chart;
 function initChart() {
   window._chartInited = true;
@@ -1093,6 +1217,7 @@ document.querySelectorAll('.food-chip').forEach(chip => {
   });
 });
 
+// 分类标签切换
 document.querySelectorAll('.cat-tab').forEach(tab => {
   tab.addEventListener('click', () => {
     document.querySelectorAll('.cat-tab').forEach(t => t.classList.remove('active'));
@@ -1100,6 +1225,7 @@ document.querySelectorAll('.cat-tab').forEach(tab => {
   });
 });
 
+// 初始化
 handleRoute();
 </script>
 
